@@ -7,7 +7,7 @@ class WindowRegister(QWidget):
     def __init__(self, volver_a_login):
         super().__init__()
         self.setWindowTitle("Registro de Usuario")
-        self.setFixedSize(300, 200)
+        self.setFixedSize(300, 400)
         self.gestor = GestorUsuarios()
         self.volver_a_login = volver_a_login
 

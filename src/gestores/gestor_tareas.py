@@ -16,7 +16,7 @@ class GestorTareas:
         """
         """
         consulta = """
-        CREATE TABLE IF NOT EXIST tareas(
+        CREATE TABLE IF NOT EXISTS tareas(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             descripcion TEXT NOT NULL,
             estado INTEGER NOT NULL DEFAULT 0,
@@ -44,7 +44,7 @@ class GestorTareas:
     def obtener_todas(self,usuario_id):
         """
         """
-        consulta = "SELECT id, descripcion, estado,fecha_limite FROM tareas WHERE id_usuario = ?;"
+        consulta = "SELECT id, descripcion, usuario_id,estado, fecha_limite FROM tareas WHERE usuario_id = ?;"
         cursor = self.conexion.execute(consulta,(usuario_id,))
         tareas = []
         for fila in cursor:
@@ -54,7 +54,7 @@ class GestorTareas:
     
     def obtener_tareas_categoria(self,usuario_id,categoria_id):
         consulta = """
-        SELECT id,description,estado,fecha_limite
+        SELECT id,descripcion,estado,fecha_limite
         FROM tareas
         WHERE usuario_id = ? AND categoria_id = ?;
         """
@@ -64,22 +64,22 @@ class GestorTareas:
     def editar_tarea(self,id_tarea,nueva_descripcion):
         """
         """
-        consulta = "UDPATE tareas SET descripcion = ? WHERE id = ?;"
+        consulta = "UPDATE tareas SET descripcion = ? WHERE id = ?;"
         self.conexion.execute(consulta,(nueva_descripcion,id_tarea))
         self.conexion.commit()
         
-    def cambiar_estado(self,id_tarea):
+    def cambiar_estado(self, id_tarea, nuevo_estado: bool):
         """
         """
-        consulta = "UPDATE tareas SET estado = 1 WHERE id = ?;"
-        self.conexion.execute(consulta,(id_tarea,))
+        consulta = "UPDATE tareas SET estado = ? WHERE id = ?;"
+        self.conexion.execute(consulta, (int(nuevo_estado), id_tarea))
         self.conexion.commit()
     
     def eliminar_tarea(self,id_tarea):
         """
         """
         consulta="DELETE FROM tareas WHERE id = ?;"
-        self.conexion.execute(consulta,(id_tarea))
+        self.conexion.execute(consulta,(id_tarea,))
         self.conexion.commit()
     
     def cerrar_conexion(self):

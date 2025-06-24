@@ -20,7 +20,7 @@ class GestorNotas:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             titulo TEXT NOT NULL,
             contenido TEXT NOT NULL,
-            estado_favorito INTEGER NOT NULL DEFAULT 0
+            estado_favorito INTEGER NOT NULL DEFAULT 0,
             usuario_id INTEGER NOT NULL,
             FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
         );
@@ -38,7 +38,7 @@ class GestorNotas:
     def obtener_todas(self,usuario_id):
         """
         """
-        consulta = "SELECT id, titulo,contenido FROM notas WHERE usuario_id = ?;"
+        consulta = "SELECT id, titulo,contenido,estado_favorito FROM notas WHERE usuario_id = ?;"
         cursor = self.conexion.execute(consulta,(usuario_id,))
         return [Nota(id=f[0], titulo=f[1], contenido=f[2], estadoFavorito=f[3]) for f in cursor]
 

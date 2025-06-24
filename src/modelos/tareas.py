@@ -1,7 +1,7 @@
 
 class Tarea:
     """
-    Representa una tarea asociada a un usuario.
+    Representa una tarea de un usuario, con opción a marcar estado, agregar fecha límite y asignarla a una categoría.
     """
     def __init__(self, id:int,descripcion:str,estado:bool =False,fecha_limite=None,categoria_id=None,usuario_id=None):
         """
