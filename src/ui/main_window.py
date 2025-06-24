@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import QWidget,QLabel,QVBoxLayout,QPushButton,QHBoxLayout
 from PyQt6.QtGui import QFont
+from PyQt6.QtCore import Qt
 from src.ui.window_tareas import VentanaTareas
 
 class MainWindow(QWidget):
@@ -7,90 +8,94 @@ class MainWindow(QWidget):
         super().__init__()
         self.usuario = usuario
         self.setWindowTitle(f"TO-DO-LIST de {usuario.nombre_usuario}")
-        self.setMinimumSize(500,400)
+        self.setMinimumSize(700,600)
         
         self.init_ui()
         
         
     def init_ui(self):
         layout = QVBoxLayout()
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.setSpacing(30)
         
         label = QLabel(f"Hola, {self.usuario.nombre_usuario}")
         label.setObjectName("titulo")
+        label.setFont(QFont("Arial", 20, QFont.Weight.Bold))
+        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addSpacing(20)
+
         saludo = QLabel("¿Qué quieres gestionar el día de hoy?")
         saludo.setObjectName("subtitulo")
-        label.setFont(QFont("Arial",16,QFont.Weight.Bold))
-        saludo.setFont(QFont("Arial",16,QFont.Weight.Bold))
+        saludo.setFont(QFont("Arial", 14))
+        saludo.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addSpacing(20)
+
         layout.addWidget(label)
         layout.addWidget(saludo)
         
-        layout_botones=QHBoxLayout()
+        botones_centrados = QHBoxLayout()
+        botones_centrados.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        botones_centrados.setSpacing(30)
         
-        self.btn_tareas = QPushButton("TAREAS")
+        self.btn_tareas = QPushButton("📝 TAREAS")
         self.btn_tareas.setObjectName("tareas")
-        self.btn_tareas.setFixedHeight(40)
+        self.btn_tareas.setFixedSize(200, 50)
         self.btn_tareas.clicked.connect(self.abrir_tareas)
-            
-        self.btn_notas = QPushButton("NOTAS")
-        self.btn_notas.setObjectName("tareas")
-        self.btn_notas.setFixedHeight(40)
+
+        self.btn_notas = QPushButton("🗒️ NOTAS")
+        self.btn_notas.setObjectName("notas")
+        self.btn_notas.setFixedSize(200, 50)
         self.btn_notas.clicked.connect(self.abrir_notas)
-        
-        self.btn_calendario = QPushButton("CALENDARIO")
-        self.btn_calendario.setObjectName("tareas")
-        self.btn_calendario.setFixedHeight(40)
+
+        self.btn_calendario = QPushButton("📅 CALENDARIO")
+        self.btn_calendario.setObjectName("calendario")
+        self.btn_calendario.setFixedSize(200, 50)
         self.btn_calendario.clicked.connect(self.abrir_calendario)
         
-        layout_botones.addWidget(self.btn_tareas)
-        layout_botones.addWidget(self.btn_notas)
-        layout_botones.addWidget(self.btn_calendario)
+        botones_centrados.addWidget(self.btn_tareas)
+        botones_centrados.addWidget(self.btn_notas)
+        botones_centrados.addWidget(self.btn_calendario)
         
-        layout.addLayout(layout_botones)
+        layout.addLayout(botones_centrados)
+        
         self.setStyleSheet("""
             QWidget {
-                background-color: #f4f4f4;
+                background-color: #f8f9fa;
                 font-family: 'Segoe UI', Arial, sans-serif;
                 font-size: 14px;
-                color: #222;
-            }
-            QLabel {
                 color: #333;
             }
             QLabel#titulo {
-                font-size: 24px;
+                font-size: 26px;
                 font-weight: bold;
-                margin-bottom: 10px;
-                color: #222;
+                color: #1e3a8a;
             }
             QLabel#subtitulo {
-                font-size: 16px;
-                margin-bottom: 20px;
+                font-size: 18px;
                 color: #555;
             }
             QPushButton {
-                padding: 10px 20px;
-                font-size: 14px;
+                font-size: 16px;
+                padding: 10px;
+                border-radius: 12px;
                 border: none;
-                border-radius: 10px;
-                background-color: #e0e0e0;
-                color: #222;
-                transition: background-color 0.3s, transform 0.2s;
+                background-color: #e2e8f0;
+                color: #1a202c;
             }
             QPushButton:hover {
-                background-color: #c0c0c0;
+                background-color: #cbd5e1;
                 font-weight: bold;
-                transform: scale(1.03);
             }
             QPushButton:disabled {
-                background-color: #aaa;
-                color: #666;
+                background-color: #a0aec0;
+                color: #718096;
             }
             QPushButton#tareas {
-                background-color: #0078D7;
+                background-color: #2563eb;
                 color: white;
             }
             QPushButton#tareas:hover {
-                background-color: #005a9e;
+                background-color: #1d4ed8;
             }
         """)
         
