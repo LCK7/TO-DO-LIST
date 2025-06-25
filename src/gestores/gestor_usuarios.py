@@ -94,3 +94,6 @@ class GestorUsuarios:
             return Usuario(id=f[0], nombre_usuario=f[1], contraseña=f[2])
         else:
             return None
+    def cerrar_conexion(self):
+        self.conexion.close()
+
