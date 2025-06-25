@@ -41,6 +41,3 @@ class Nota:
         - str: Cadena compuesta por el título y el contenido.
         """
         return f"{self.titulo}\n{self.contenido}"
-
-    
-    
