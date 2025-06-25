@@ -1,14 +1,28 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QPushButton,
-    QHBoxLayout, QTableWidget, QTableWidgetItem,QHeaderView
+    QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView
 )
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QShowEvent
 from datetime import datetime, timedelta
 from src.gestores.gestor_tareas import GestorTareas
 
+
 class VentanaCalendario(QWidget):
+    """
+    Ventana para mostrar un calendario semanal con las tareas pendientes del usuario.
+
+    Permite navegar entre semanas, visualizar tareas pendientes con fecha límite 
+    dentro de la semana seleccionada y regresar a la ventana principal.
+    """
+
     def __init__(self, usuario, volver_a_main):
+        """
+        Inicializa la ventana de calendario con las tareas del usuario.
+
+        Args:
+            usuario: Instancia del usuario actual.
+            volver_a_main: Función para volver a la ventana principal.
+        """
         super().__init__()
         self.usuario = usuario
         self.volver_a_main = volver_a_main
@@ -22,6 +36,9 @@ class VentanaCalendario(QWidget):
         self.mostrar_tareas()
 
     def init_ui(self):
+        """
+        Configura la interfaz gráfica del calendario semanal.
+        """
         layout = QVBoxLayout()
 
         titulo = QLabel("📆 Tareas Pendientes por Semana")
@@ -46,8 +63,8 @@ class VentanaCalendario(QWidget):
         self.tabla = QTableWidget()
         self.tabla.setColumnCount(2)
         self.tabla.setHorizontalHeaderLabels(["Fecha", "Descripción"])
-        self.tabla.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch) # type: ignore
-        self.tabla.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch) # type: ignore
+        self.tabla.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)  # type: ignore
+        self.tabla.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)  # type: ignore
         self.tabla.setStyleSheet("font-size: 14px;")
         layout.addWidget(self.tabla)
 
@@ -93,6 +110,9 @@ class VentanaCalendario(QWidget):
         """)
 
     def mostrar_tareas(self):
+        """
+        Carga y muestra en la tabla las tareas pendientes de la semana actual.
+        """
         inicio_semana = self.fecha_actual - timedelta(days=self.fecha_actual.weekday())
         fin_semana = inicio_semana + timedelta(days=6)
 
@@ -109,39 +129,40 @@ class VentanaCalendario(QWidget):
         ]
 
         self.tabla.clearContents()
-        self.tabla.setRowCount(len(tareas_semana)) 
+        self.tabla.setRowCount(len(tareas_semana))
 
         for i, tarea in enumerate(tareas_semana):
             fecha = tarea.fecha_limite or "Sin fecha"
             descripcion = tarea.descripcion or "Sin descripción"
-            categoria = getattr(tarea, 'categoria', "Sin categoría")
 
             fecha_item = QTableWidgetItem(fecha)
             descripcion_item = QTableWidgetItem(descripcion)
-            categoria_item = QTableWidgetItem(categoria)
 
-            for item in (fecha_item, descripcion_item, categoria_item):
+            for item in (fecha_item, descripcion_item):
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 item.setForeground(Qt.GlobalColor.black)
+                item.setBackground(Qt.GlobalColor.white)
 
-            color_fondo = Qt.GlobalColor.white
-
-            for item in (fecha_item, descripcion_item, categoria_item):
-                item.setBackground(color_fondo)
-
-            self.tabla.setItem(i,0,fecha_item)
-            self.tabla.setItem(i,1,descripcion_item)
-            self.tabla.setItem(i,2,categoria_item)
+            self.tabla.setItem(i, 0, fecha_item)
+            self.tabla.setItem(i, 1, descripcion_item)
 
     def semana_anterior(self):
+        """
+        Desplaza la vista una semana hacia atrás y actualiza la tabla.
+        """
         self.fecha_actual -= timedelta(days=7)
         self.mostrar_tareas()
 
     def semana_siguiente(self):
+        """
+        Desplaza la vista una semana hacia adelante y actualiza la tabla.
+        """
         self.fecha_actual += timedelta(days=7)
         self.mostrar_tareas()
 
     def volver(self):
+        """
+        Cierra la ventana y regresa a la ventana principal.
+        """
         self.close()
         self.volver_a_main()
-    

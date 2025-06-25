@@ -8,7 +8,20 @@ from src.gestores.gestor_categoria import GestorCategoria
 
 
 class DialogoEditarTarea(QDialog):
+    """
+    Diálogo gráfico para editar una tarea existente.
+
+    Permite modificar la descripción, fecha límite y categoría de una tarea.
+    """
+
     def __init__(self, tarea, usuario_id):
+        """
+        Inicializa el cuadro de diálogo con los datos actuales de la tarea.
+
+        Parámetros:
+        - tarea: Objeto Tarea que se desea editar.
+        - usuario_id (int): ID del usuario al que pertenece la tarea.
+        """
         super().__init__()
         self.setWindowTitle("✏️ Editar Tarea")
         self.setMinimumWidth(350)
@@ -106,12 +119,27 @@ class DialogoEditarTarea(QDialog):
         """)
 
     def validar(self):
+        """
+        Valida que la descripción no esté vacía.
+
+        Si está vacía, muestra un mensaje de advertencia.
+        Si es válida, se acepta el diálogo.
+        """
         if not self.input_desc.text().strip():
             QMessageBox.warning(self, "Error", "La descripción no puede estar vacía.")
             return
         self.accept()
 
     def get_data(self):
+        """
+        Obtiene los datos ingresados por el usuario para actualizar la tarea.
+
+        Retorna:
+        - tuple: (descripcion (str), fecha_limite (str), categoría (int | str | None)).
+        Si la categoría es nueva, retorna el nombre como str.
+        Si es una existente, retorna el ID como int.
+        Si no se seleccionó categoría, retorna None.
+        """
         desc = self.input_desc.text().strip()
         fecha = self.input_fecha.date().toPyDate().isoformat()
         texto_categoria = self.combo_categoria.currentText().strip()

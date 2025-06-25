@@ -8,7 +8,20 @@ from src.gestores.gestor_categoria import GestorCategoria
 from src.gestores.gestor_tareas import GestorTareas
 
 class VentanaGestionCategoria(QWidget):
+    """
+    Ventana para la gestión de categorías de tareas.
+
+    Permite al usuario agregar, editar y eliminar categorías.
+    También valida si una categoría tiene tareas asociadas antes de permitir su eliminación.
+    """
     def __init__(self, usuario, volver_a_main):
+        """
+        Inicializa la VentanaGestionCategoria.
+
+        Args:
+            usuario: Objeto de usuario actualmente logueado.
+            volver_a_main: Función de callback para regresar a la ventana principal.
+        """
         super().__init__()
         self.usuario = usuario
         self.volver_a_main = volver_a_main
@@ -22,6 +35,11 @@ class VentanaGestionCategoria(QWidget):
         self.mostrar_categorias()
 
     def init_ui(self):
+        """
+        Inicializa la interfaz de usuario de la ventana de gestión de categorías.
+
+        Configura el diseño, los widgets (inputs, botones, lista) y los estilos.
+        """
         layout = QVBoxLayout()
 
         titulo = QLabel("🏷️ Categorías")
@@ -72,6 +90,7 @@ class VentanaGestionCategoria(QWidget):
                 border: 1px solid #cbd5e0;
                 border-radius: 5px;
                 background-color: white;
+                color:black;
             }
             QPushButton {
                 background-color: #2563eb;
@@ -98,6 +117,12 @@ class VentanaGestionCategoria(QWidget):
         self.setLayout(layout)
 
     def mostrar_categorias(self):
+        """
+        Muestra todas las categorías del usuario actual en la QListWidget.
+
+        Limpia la lista actual y la repopula con las categorías obtenidas del gestor.
+        Cada elemento de la lista almacena el ID de la categoría en su UserRole.
+        """
         self.lista_categorias.clear()
         categorias = self.gestor.obtener_todas(self.usuario.id)
         for cat in categorias:
@@ -106,6 +131,13 @@ class VentanaGestionCategoria(QWidget):
             self.lista_categorias.addItem(item)
 
     def agregar_categoria(self):
+        """
+        Agrega una nueva categoría.
+
+        Obtiene el nombre de la categoría del QLineEdit, lo valida y lo añade
+        a través del gestor de categorías. Luego, actualiza la lista de categorías.
+        Muestra un mensaje de advertencia si el nombre está vacío.
+        """
         nombre = self.input_categoria.text().strip()
         if nombre:
             self.gestor.agregar_categoria(nombre, self.usuario.id)
@@ -115,6 +147,15 @@ class VentanaGestionCategoria(QWidget):
             QMessageBox.warning(self, "Error", "El nombre de la categoría no puede estar vacío.")
 
     def eliminar_categoria(self):
+        """
+        Elimina la categoría seleccionada.
+
+        Verifica si hay una categoría seleccionada. Antes de eliminar, comprueba
+        si la categoría tiene tareas asociadas. Si las tiene, muestra una advertencia.
+        Si no, pide confirmación al usuario antes de proceder con la eliminación
+        a través del gestor de categorías y actualiza la lista.
+        Muestra un mensaje de advertencia si no hay categoría seleccionada.
+        """
         item = self.lista_categorias.currentItem()
         if item:
             id_categoria = item.data(Qt.ItemDataRole.UserRole)
@@ -142,6 +183,14 @@ class VentanaGestionCategoria(QWidget):
             QMessageBox.warning(self, "Selecciona una categoría", "Por favor, selecciona una categoría para eliminar.")
 
     def editar_categoria(self):
+        """
+        Edita el nombre de la categoría seleccionada.
+
+        Verifica si hay una categoría seleccionada. Solicita al usuario un nuevo nombre
+        mediante un QInputDialog. Si se proporciona un nuevo nombre válido, actualiza
+        la categoría a través del gestor y refresca la lista.
+        Muestra un mensaje de advertencia si no hay categoría seleccionada.
+        """
         item = self.lista_categorias.currentItem()
         if item:
             id_categoria = item.data(Qt.ItemDataRole.UserRole)
@@ -153,5 +202,8 @@ class VentanaGestionCategoria(QWidget):
             QMessageBox.warning(self, "Selecciona una categoría", "Selecciona una categoría para editar.")
 
     def volver(self):
+        """
+        Cierra la ventana actual y llama a la función de callback para volver a la ventana principal.
+        """
         self.close()
         self.volver_a_main()

@@ -4,26 +4,41 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import QDate
 from datetime import date
-from src.gestores.gestor_categoria import GestorCategoria  # Usa el gestor correcto
+from src.gestores.gestor_categoria import GestorCategoria
 
 
 class DialogoNuevaTarea(QDialog):
+    """
+    Diálogo para crear una nueva tarea.
+
+    Permite ingresar una descripción, seleccionar o crear una categoría,
+    y asignar una fecha límite a la tarea.
+    """
+
     def __init__(self, usuario_id):
+        """
+        Inicializa el diálogo con los campos de entrada para la nueva tarea.
+
+        Parámetros:
+        - usuario_id (int): ID del usuario que crea la tarea.
+        """
         super().__init__()
         self.setWindowTitle("🆕 Nueva Tarea")
         self.setMinimumWidth(350)
 
         self.usuario_id = usuario_id
-        self.gestor_categoria = GestorCategoria()  # 👈 Cambiado
+        self.gestor_categoria = GestorCategoria()
 
         layout = QVBoxLayout()
         layout.setSpacing(15)
-        
+
+        # Campo de descripción
         label_desc = QLabel("📝 Descripción:")
         self.descripcion_edit = QLineEdit()
         layout.addWidget(label_desc)
         layout.addWidget(self.descripcion_edit)
 
+        # Campo de categoría
         label_cat = QLabel("🗂️ Categoría:")
         self.combo_categoria = QComboBox()
         self.combo_categoria.setEditable(True)
@@ -36,6 +51,7 @@ class DialogoNuevaTarea(QDialog):
         layout.addWidget(label_cat)
         layout.addWidget(self.combo_categoria)
 
+        # Campo de fecha
         label_fecha = QLabel("📅 Fecha límite:")
         self.fecha_edit = QDateEdit()
         self.fecha_edit.setCalendarPopup(True)
@@ -43,6 +59,7 @@ class DialogoNuevaTarea(QDialog):
         layout.addWidget(label_fecha)
         layout.addWidget(self.fecha_edit)
 
+        # Botones
         botones = QHBoxLayout()
         self.btn_guardar = QPushButton("💾 Guardar")
         self.btn_cancelar = QPushButton("❌ Cancelar")
@@ -53,10 +70,10 @@ class DialogoNuevaTarea(QDialog):
 
         botones.addWidget(self.btn_guardar)
         botones.addWidget(self.btn_cancelar)
-
         layout.addLayout(botones)
+
         self.setLayout(layout)
-        
+
         self.setStyleSheet("""
             QDialog {
                 background-color: #f7fafc;
@@ -96,6 +113,12 @@ class DialogoNuevaTarea(QDialog):
         """)
 
     def validar(self):
+        """
+        Valida que la descripción no esté vacía y que la fecha no sea anterior a hoy.
+
+        Si la validación es correcta, se acepta el diálogo.
+        De lo contrario, se muestra un mensaje de advertencia.
+        """
         descripcion = self.descripcion_edit.text().strip()
         fecha = self.fecha_edit.date().toPyDate()
 
@@ -110,15 +133,21 @@ class DialogoNuevaTarea(QDialog):
         self.accept()
 
     def get_data(self):
-        descripcion = self.descripcion_edit.text().strip()
-        fecha = self.fecha_edit.date().toPyDate() 
+        """
+        Obtiene los datos ingresados por el usuario.
 
+        Retorna:
+        - tuple: (descripcion (str), fecha_limite (str en formato ISO), categoría (int | str | None)).
+          Si la categoría es nueva, devuelve el texto. Si es existente, devuelve su ID.
+        """
+        descripcion = self.descripcion_edit.text().strip()
+        fecha = self.fecha_edit.date().toPyDate()
         texto_categoria = self.combo_categoria.currentText().strip()
         categoria_id = self.combo_categoria.currentData()
 
         if texto_categoria.upper() == "SIN CATEGORÍA" or not texto_categoria:
             return descripcion, fecha.isoformat(), None
         elif categoria_id is None:
-            return descripcion, fecha.isoformat(), texto_categoria  # Nueva categoría
+            return descripcion, fecha.isoformat(), texto_categoria
         else:
             return descripcion, fecha.isoformat(), categoria_id
