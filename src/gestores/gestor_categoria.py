@@ -1,5 +1,7 @@
 import sqlite3
 from src.modelos.categoria import Categoria
+from src.modelos.tareas import Tarea
+
 
 class GestorCategoria:
     def __init__(self,nombre_db = "tareas.db"):
@@ -34,6 +36,13 @@ class GestorCategoria:
         """
         cursor = self.conexion.execute("SELECT id, nombre, usuario_id FROM categorias WHERE usuario_id = ?;", (usuario_id,))
         return [Categoria(*fila) for fila in cursor]
+
+    def obtener_por_categoria(self, categoria_id):
+        cursor = self.conexion.execute(
+            "SELECT * FROM tareas WHERE categoria_id = ?;",
+            (categoria_id,)
+        )
+        return [Tarea(*fila) for fila in cursor]
 
     def eliminar_categoria(self, id_categoria):
         """

@@ -3,7 +3,7 @@ class Tarea:
     """
     Representa una tarea de un usuario, con opción a marcar estado, agregar fecha límite y asignarla a una categoría.
     """
-    def __init__(self, id:int,descripcion:str,estado:bool =False,fecha_limite=None,categoria_id=None,usuario_id=None):
+    def __init__(self, id:int,descripcion:str,estado:bool =False,fecha_limite=None,categoria_id=None,usuario_id=None,categoria: str = "Sin Categoría"):
         """
         
         """
@@ -13,6 +13,7 @@ class Tarea:
         self.fecha_limite = fecha_limite
         self.categoria_id = categoria_id
         self.usuario_id = usuario_id
+        self.categoria = categoria
         
     def definir_estado(self):
         """
