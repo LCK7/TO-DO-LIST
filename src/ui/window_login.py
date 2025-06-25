@@ -5,11 +5,23 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 from src.gestores.gestor_usuarios import GestorUsuarios
 from src.ui.window_register import WindowRegister
-from src.ui.main_window import MainWindow
-
+# from src.ui.main_window import MainWindow # Comentado para evitar importación circular temprana
 
 class WindowLogin(QWidget):
+    """
+    Ventana de inicio de sesión para la aplicación TO-DO List.
+
+    Permite a los usuarios ingresar sus credenciales para acceder a la aplicación.
+    También proporciona un enlace para registrar nuevas cuentas.
+    """
     def __init__(self, on_login_exitoso):
+        """
+        Inicializa la ventana de login.
+
+        Args:
+            on_login_exitoso: Función de callback que se ejecuta si el login es exitoso.
+                              Recibirá el objeto de usuario como argumento.
+        """
         super().__init__()
         self.setWindowTitle("Login | TO-DO List")
         self.setMinimumSize(350, 450)
@@ -125,6 +137,14 @@ class WindowLogin(QWidget):
         self.setLayout(layout)
 
     def intentar_login(self):
+        """
+        Intenta iniciar sesión con las credenciales proporcionadas.
+
+        Verifica el usuario y la contraseña con el gestor de usuarios.
+        Si el login es exitoso, oculta la ventana actual, crea y muestra
+        la ventana principal de la aplicación, y pasa el objeto de usuario.
+        Si falla, muestra un mensaje de error.
+        """
         usuario = self.usuario_input.text()
         contraseña = self.contraseña_input.text()
 
@@ -134,18 +154,30 @@ class WindowLogin(QWidget):
             self.hide()
 
             def volver_al_login():
+                """Callback para regresar a la ventana de login desde la principal."""
                 self.show()
 
-            from src.ui.main_window import MainWindow
+            # Importación local para evitar circularidad si MainWindow también importa WindowLogin
+            from src.ui.main_window import MainWindow 
             self.ventana_principal = MainWindow(usuario_obj, volver_a_login=volver_al_login)
             self.ventana_principal.show()
+        else:
+            QMessageBox.warning(self, "Error de Login", "Usuario o contraseña incorrectos.")
+
 
     def abrir_registro(self):
+        """
+        Abre la ventana de registro de usuarios.
+
+        Oculta la ventana de login actual y muestra la ventana de registro.
+        Configura un callback para que, al cerrar la ventana de registro,
+        se vuelva a mostrar la ventana de login.
+        """
         self.hide()
 
         def volver():
+            """Callback para regresar a la ventana de login desde el registro."""
             self.show()
 
         self.ventana_registro = WindowRegister(volver_a_login=volver)
         self.ventana_registro.show()
-    
