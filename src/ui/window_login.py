@@ -1,9 +1,8 @@
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QLineEdit,
-    QPushButton, QLabel, QMessageBox, QSpacerItem, QSizePolicy
+    QPushButton, QLabel, QMessageBox
 )
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
 from src.gestores.gestor_usuarios import GestorUsuarios
 from src.ui.window_register import WindowRegister
 
@@ -22,6 +21,13 @@ class WindowLogin(QWidget):
                 font-family: Arial;
                 font-size: 14px;
                 color: #222; /* Texto más oscuro para mayor contraste */
+            }
+            QLabel#titulo1 {
+                
+                font-size: 22px;
+                font-weight: bold;
+                color: #333;
+                margin-bottom: 25px;
             }
             QLabel#titulo {
                 font-size: 22px;
@@ -44,7 +50,6 @@ class WindowLogin(QWidget):
                 font-size: 14px;
                 border: none;
                 border-radius: 8px;
-                transition: background-color 0.3s;
             }
             QPushButton#login {
                 background-color: #0078D7;
@@ -75,7 +80,10 @@ class WindowLogin(QWidget):
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
+        titulo1 = QLabel("TO-DO-LIST")
+        titulo1.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         titulo = QLabel("INICIA SESIÓN")
+        titulo1.setObjectName("titulo1")
         titulo.setObjectName("titulo")
         titulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -98,6 +106,8 @@ class WindowLogin(QWidget):
         self.boton_salir.setObjectName("salir")
         self.boton_salir.clicked.connect(QApplication.quit)
 
+        layout.addWidget(titulo1)
+        layout.addSpacing(10)
         layout.addWidget(titulo)
         layout.addSpacing(10)
         layout.addWidget(self.usuario_input)

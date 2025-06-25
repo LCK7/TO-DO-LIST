@@ -19,22 +19,75 @@ class VentanaTareas(QWidget):
         
     def init_ui(self):
         layout = QVBoxLayout()
+        layout.setSpacing(15)
+
+        titulo = QLabel(f"Tareas de {self.usuario.nombre_usuario}")
+        titulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(titulo)
+
         self.lista_tareas = QListWidget()
         self.lista_tareas.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.lista_tareas.customContextMenuRequested.connect(self.mostrar_menu_contextual)
-        layout.addWidget(QLabel(f"Tareas de {self.usuario.nombre_usuario}:"))
-        
         self.lista_tareas.itemDoubleClicked.connect(self.editar_tarea)
         layout.addWidget(self.lista_tareas)
 
-        self.boton_agregar = QPushButton(" Agregar tarea")
+        # Botón Agregar
+        self.boton_agregar = QPushButton("➕ Agregar tarea")
         self.boton_agregar.clicked.connect(self.agregar_tarea)
         layout.addWidget(self.boton_agregar)
-        
-        self.btn_volver = QPushButton("Volver al Inicio")
+
+        # Botón Volver
+        self.btn_volver = QPushButton("⬅️ Volver al Inicio")
+        self.btn_volver.setObjectName("btn_volver")
         self.btn_volver.clicked.connect(self.volver)
         layout.addWidget(self.btn_volver)
+
         self.setLayout(layout)
+        
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #f9fafb;
+                font-family: 'Segoe UI', Arial, sans-serif;
+                color: #1a202c;
+                font-size: 14px;
+            }
+            
+            QLabel {
+                font-size: 16px;
+                margin-bottom: 10px;
+                color: #2d3748;
+                font-weight: bold;
+            }
+
+            QListWidget {
+                background-color: #ffffff;
+                border: 1px solid #cbd5e0;
+                border-radius: 10px;
+                padding: 10px;
+            }
+
+            QPushButton {
+                background-color: #3182ce;
+                color: white;
+                border-radius: 10px;
+                padding: 10px 15px;
+                font-size: 14px;
+                margin-top: 10px;
+            }
+
+            QPushButton:hover {
+                background-color: #2b6cb0;
+                font-weight: bold;
+            }
+
+            QPushButton#btn_volver {
+                background-color: #4a5568;
+            }
+
+            QPushButton#btn_volver:hover {
+                background-color: #2d3748;
+            }
+        """)
     
     def cargar_tareas(self):
         self.lista_tareas.clear()
@@ -78,13 +131,13 @@ class VentanaTareas(QWidget):
         
         dialogo = DialogoNuevaTarea()
         if dialogo.exec():
-            descripcion, fecha_limite = dialogo.get_data()
+            descripcion, fecha_limite, categoria = dialogo.get_data()
             
             if fecha_limite == '':
                 fecha_limite = None
             
             if descripcion.strip():
-                self.gestor.agregar_tarea(descripcion, self.usuario.id, fecha_limite, None)
+                self.gestor.agregar_tarea(descripcion, self.usuario.id, fecha_limite, categoria)
                 self.cargar_tareas()
             else:
                 QMessageBox.warning(self, "Ups", "La descripción no puede estar vacía.")
