@@ -5,6 +5,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 from src.gestores.gestor_usuarios import GestorUsuarios
 from src.ui.window_register import WindowRegister
+from src.ui.main_window import MainWindow
 
 
 class WindowLogin(QWidget):
@@ -130,10 +131,14 @@ class WindowLogin(QWidget):
         usuario_obj = self.gestor.verificar_login(usuario, contraseña)
 
         if usuario_obj:
-            self.close()
-            self.on_login_exitoso(usuario_obj)
-        else:
-            QMessageBox.warning(self, "Error", "Usuario o Contraseña incorrectos.")
+            self.hide()
+
+            def volver_al_login():
+                self.show()
+
+            from src.ui.main_window import MainWindow
+            self.ventana_principal = MainWindow(usuario_obj, volver_a_login=volver_al_login)
+            self.ventana_principal.show()
 
     def abrir_registro(self):
         self.hide()
@@ -143,3 +148,4 @@ class WindowLogin(QWidget):
 
         self.ventana_registro = WindowRegister(volver_a_login=volver)
         self.ventana_registro.show()
+    

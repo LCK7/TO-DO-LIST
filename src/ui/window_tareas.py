@@ -1,8 +1,9 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QListWidget, QListWidgetItem, QMessageBox, QInputDialog,QHBoxLayout,QMenu
-from PyQt6.QtCore import Qt, QPoint
-from PyQt6.QtGui import QCloseEvent
+from PyQt6.QtCore import Qt, QPoint,QSize
+from PyQt6.QtGui import QCloseEvent,QIcon
 from src.gestores.gestor_tareas import GestorTareas
 from src.ui.dialogo_nueva_tarea import DialogoNuevaTarea
+
 
 
 class VentanaTareas(QWidget):
@@ -97,25 +98,49 @@ class VentanaTareas(QWidget):
         
     def agregar_item_tarea(self, tarea):
         widget_tarea = QWidget()
+        widget_tarea.setStyleSheet("""
+            background-color: #ffffff;
+            border-radius: 12px;
+        """)
         layout_h = QHBoxLayout()
-        layout_h.setContentsMargins(10, 5, 10, 5)
-
-        label_desc = QLabel(f"📝 {tarea.descripcion}")
-        label_fecha = QLabel(f"📅 Límite: {tarea.fecha_limite if tarea.fecha_limite else 'Sin límite'}")
-        label_estado = QLabel(f"{'✅ Completada' if tarea.estado else '❌ Pendiente'}")
+        layout_h.setContentsMargins(5, 5, 5, 5)
+        layout_h.setSpacing(20)
 
         layout_v = QVBoxLayout()
+        layout_v.setSpacing(5)
+
+        label_desc = QLabel(f"📝 {tarea.descripcion}")
+        label_desc.setStyleSheet("font-size: 15px; font-weight: bold; color: #1a202c;margin: 3px")
+        
+        label_cat = QLabel(f"🗂️ Categoria: {tarea.categoria}")
+        label_cat.setStyleSheet("font-size: 15px; font-weight: bold; color: #1a202c;margin: 3px")
+
+        label_fecha = QLabel(f"📅 Límite: {tarea.fecha_limite if tarea.fecha_limite else 'Sin límite'}")
+        label_fecha.setStyleSheet("font-size: 13px; color: #4a5568;margin: 3px;")
+
+        label_estado = QLabel("✅ Completada" if tarea.estado else "❌ Pendiente")
+        label_estado.setStyleSheet(f"font-size: 13px; color: {'#38a169' if tarea.estado else '#e53e3e'};margin: 3px;")
+
         layout_v.addWidget(label_desc)
+        layout_v.addWidget(label_cat)
         layout_v.addWidget(label_fecha)
         layout_v.addWidget(label_estado)
 
-        layout_h.addLayout(layout_v)
-
-        boton_eliminar = QPushButton("🗑️")
-        boton_eliminar.setFixedSize(30, 30)
-        boton_eliminar.setStyleSheet("background-color: black; color: white; border-radius: 5px;")
+        boton_eliminar = QPushButton()
+        boton_eliminar.setIcon(QIcon("src/assets/slash.svg"))
+        boton_eliminar.setIconSize(QSize(25,25))
+        boton_eliminar.setFixedSize(40,45)
+        boton_eliminar.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+            }
+            QPushButton:hover {
+                background-color: #f0f0f0;
+            }
+        """)
         boton_eliminar.clicked.connect(lambda _, tid=tarea.id: self.eliminar_tarea_confirmada(tid))
-
+        
+        layout_h.addLayout(layout_v)
         layout_h.addStretch()
         layout_h.addWidget(boton_eliminar)
 
@@ -126,21 +151,22 @@ class VentanaTareas(QWidget):
         self.lista_tareas.addItem(item)
         self.lista_tareas.setItemWidget(item, widget_tarea)
         
-        
     def agregar_tarea(self):
-        
-        dialogo = DialogoNuevaTarea()
+        dialogo = DialogoNuevaTarea(self.usuario.id)
         if dialogo.exec():
-            descripcion, fecha_limite, categoria = dialogo.get_data()
-            
+            descripcion, fecha_limite, nombre_categoria = dialogo.get_data()
+
             if fecha_limite == '':
                 fecha_limite = None
-            
+
             if descripcion.strip():
-                self.gestor.agregar_tarea(descripcion, self.usuario.id, fecha_limite, categoria)
+                categoria_id = self.gestor.crear_categoria_si_no_existe(nombre_categoria,self.usuario.id)
+
+                self.gestor.agregar_tarea(descripcion, self.usuario.id, fecha_limite, categoria_id)
                 self.cargar_tareas()
             else:
                 QMessageBox.warning(self, "Ups", "La descripción no puede estar vacía.")
+
 
     def eliminar_tarea_confirmada(self, id_tarea):
         confirm = QMessageBox.question(self, "Eliminar", "¿Seguro que deseas eliminar esta tarea?")
@@ -152,16 +178,25 @@ class VentanaTareas(QWidget):
         index = self.lista_tareas.row(item)
         tarea = self.tareas[index]
 
-        opciones = QMessageBox.question(self, "Tarea",
-            f"¿Marcar como {'Pendiente' if tarea.estado else 'Completada'}?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel)
+        # Importa aquí para evitar import circular si lo tienes
+        from src.ui.dialogo_editar_tarea import DialogoEditarTarea
 
-        if opciones == QMessageBox.StandardButton.Yes:
-            self.gestor.cambiar_estado(tarea.id, not tarea.estado)
+        # Abre el diálogo de edición
+        dialogo = DialogoEditarTarea(tarea, self.usuario.id)
+
+        if dialogo.exec():
+            nueva_desc, nueva_fecha, categoria_info = dialogo.get_data()
+
+            # Si el usuario escribió una nueva categoría (es texto)
+            if isinstance(categoria_info, str):
+                categoria_id = self.gestor.crear_categoria_si_no_existe(categoria_info, self.usuario.id)
+            else:
+                categoria_id = categoria_info  # Puede ser None o un ID existente
+
+            self.gestor.editar_tarea(tarea.id, nueva_desc, nueva_fecha, categoria_id)
             self.cargar_tareas()
-        elif opciones == QMessageBox.StandardButton.No:
-            self.eliminar_tarea_confirmada(tarea.id)
-        
+
+
     def mostrar_menu_contextual(self, pos: QPoint):
         """
         """
@@ -174,30 +209,17 @@ class VentanaTareas(QWidget):
 
         menu = QMenu(self)
 
-        accion_editar = menu.addAction("✏️ Editar tarea")
         accion_eliminar = menu.addAction("🗑️ Eliminar tarea")
         accion_estado = menu.addAction("✅ Marcar como Completada" if not tarea.estado else "❌ Marcar como Pendiente")
 
         accion = menu.exec(self.lista_tareas.mapToGlobal(pos))
 
-        if accion == accion_editar:
-            self.editar_descripcion(tarea)
-        elif accion == accion_eliminar:
+        if accion == accion_eliminar:
             self.eliminar_tarea_confirmada(tarea.id)
         elif accion == accion_estado:
             self.gestor.cambiar_estado(tarea.id, not tarea.estado)
             self.cargar_tareas()
             
-    def editar_descripcion(self, tarea):
-        """
-        """
-        texto, ok = QInputDialog.getText(self, "Editar tarea", "Nueva descripción:", text=tarea.descripcion)
-        if ok and texto.strip():
-            self.gestor.editar_tarea(tarea.id, texto.strip())
-            self.cargar_tareas()
-        elif ok:
-            QMessageBox.warning(self, "Advertencia", "La descripción no puede estar vacía.")
-    
     def volver(self):
         self.hide()
         self.volver_a_main()
@@ -215,4 +237,4 @@ class VentanaTareas(QWidget):
             self.hide()
             self.volver_a_main()
         else:
-            event.ignore() 
+            self.close() 

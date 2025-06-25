@@ -1,21 +1,34 @@
-from PyQt6.QtWidgets import QWidget,QLabel,QVBoxLayout,QPushButton,QHBoxLayout
+from PyQt6.QtWidgets import QWidget,QLabel,QVBoxLayout,QPushButton,QHBoxLayout,QMessageBox
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
 from src.ui.window_tareas import VentanaTareas
+from src.ui.window_notas import VentanaNotas
+from src.ui.window_calendario import VentanaCalendario
+from src.ui.window_gestion_categoria import VentanaGestionCategoria
 
 class MainWindow(QWidget):
-    def __init__(self,usuario):
+    def __init__(self,usuario,volver_a_login):
         super().__init__()
         self.usuario = usuario
         self.setWindowTitle(f"TO-DO-LIST de {usuario.nombre_usuario}")
-        self.setMinimumSize(700,600)
-        
+        self.setMinimumSize(700,500)
+        self.volver_a_login = volver_a_login
         self.init_ui()
         
         
     def init_ui(self):
+        fila_administracion = QHBoxLayout()
+        fila_administracion.addStretch()
+        btn_gestion_categorias = QPushButton("🏷️ GESTION CATEGORÍA")
+        btn_gestion_categorias.setObjectName("categorias")
+        btn_gestion_categorias.setFixedSize(250, 40)
+        
+        btn_gestion_categorias.clicked.connect(self.abrir_gestion_categorias)
+        fila_administracion.addWidget(btn_gestion_categorias)
+        
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addLayout(fila_administracion)
         layout.setSpacing(30)
         
         label = QLabel(f"Hola, {self.usuario.nombre_usuario}")
@@ -29,7 +42,7 @@ class MainWindow(QWidget):
         saludo.setFont(QFont("Arial", 14))
         saludo.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addSpacing(20)
-
+        
         layout.addWidget(label)
         layout.addWidget(saludo)
         
@@ -52,11 +65,28 @@ class MainWindow(QWidget):
         self.btn_calendario.setFixedSize(200, 50)
         self.btn_calendario.clicked.connect(self.abrir_calendario)
         
+        self.btn_cerrar_sesion = QPushButton("🚪 Cerrar sesión")
+        self.btn_cerrar_sesion.setFixedSize(150, 40)
+        self.btn_cerrar_sesion.setObjectName("cerrar")
+        self.btn_cerrar_sesion.clicked.connect(self.cerrar_sesion)
+
+        layout.addSpacing(20)
+        
+        
         botones_centrados.addWidget(self.btn_tareas)
         botones_centrados.addWidget(self.btn_notas)
         botones_centrados.addWidget(self.btn_calendario)
         
         layout.addLayout(botones_centrados)
+        layout.addStretch()
+        
+        fila_cerrar = QHBoxLayout()
+        fila_cerrar.addStretch() 
+        fila_cerrar.addWidget(self.btn_cerrar_sesion)
+        
+        
+        
+        layout.addLayout(fila_cerrar)
         
         self.setStyleSheet("""
             QWidget {
@@ -64,6 +94,10 @@ class MainWindow(QWidget):
                 font-family: 'Segoe UI', Arial, sans-serif;
                 font-size: 14px;
                 color: #333;
+            }
+            QPushButton#categorias {
+                background-color: #f59e0b;
+                color: white;
             }
             QLabel#titulo {
                 font-size: 26px;
@@ -84,6 +118,14 @@ class MainWindow(QWidget):
             }
             QPushButton:hover {
                 background-color: #cbd5e1;
+                font-weight: bold;
+            }
+            QPushButton#cerrar {
+                background-color: #ef4444;
+                color: white;
+            }
+            QPushButton#cerrar:hover {
+                background-color: #dc2626;
                 font-weight: bold;
             }
             QPushButton:disabled {
@@ -112,9 +154,47 @@ class MainWindow(QWidget):
         self.btn_tareas.setEnabled(False)
         self.ventana_tareas = VentanaTareas(self.usuario, volver_a_main=volver)
         self.ventana_tareas.show()
+    
 
     def abrir_notas(self):
-        print("Esto abrira window_notas")
+        print("Ocultando ventana principal (Notas)...")
+        self.hide()
+
+        def volver():
+            self.show()
+            self.btn_notas.setEnabled(True)
+
+        self.btn_notas.setEnabled(False)
+        self.ventana_notas = VentanaNotas(self.usuario, volver_a_main=volver)
+        self.ventana_notas.show()
 
     def abrir_calendario(self):
-        print("Esto abrira window_calendario")
+        self.hide()  # Oculta la ventana principal
+
+        def volver():
+            self.ventana_calendario.close()
+            self.show()
+
+        # Siempre crea una nueva instancia para garantizar actualización
+        self.ventana_calendario = VentanaCalendario(self.usuario, volver_a_main=volver)
+        self.ventana_calendario.show()
+
+    def abrir_gestion_categorias(self):
+        self.hide()
+        def volver():
+            self.ventana_gestion_categorias.close()
+            self.show()
+        self.ventana_gestion_categorias = VentanaGestionCategoria(self.usuario, volver)
+        self.ventana_gestion_categorias.show()
+        
+    def cerrar_sesion(self):
+        confirmacion = QMessageBox.question(
+            self,
+            "Cerrar sesión",
+            "¿Estás seguro que deseas cerrar sesión?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            )
+
+        if confirmacion == QMessageBox.StandardButton.Yes:
+            self.close()
+            self.volver_a_login() 
