@@ -43,7 +43,7 @@ Este diseño orientado a objetos facilita el mantenimiento del código y permite
 
 [Visita el documento](https://docs.google.com/document/d/1h_WIGW-LbQVDuDdO5rqCobXio_KOkSiNV3eRZhvRemk/edit?usp=sharing)
 
-```
+
 
 ---
 
