@@ -1,43 +1,25 @@
-class Nota:
-    """
-    Representa una nota escrita por un usuario, que puede marcarse como favorita.
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, Text
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+from src.modelos.base import Base
 
-    Atributos:
-    - id (int): Identificador único de la nota.
-    - titulo (str): Título de la nota.
-    - contenido (str): Texto o contenido de la nota.
-    - estadoFavorito (bool): Indicador de si la nota está marcada como favorita.
-    - usuario_id (int | None): ID del usuario al que pertenece la nota.
-    """
-
-    def __init__(self, id: int, titulo: str, contenido: str, estadoFavorito: bool = False, usuario_id=None):
-        """
-        Inicializa una nueva instancia de la clase Nota.
-
-        Parámetros:
-        - id (int): ID único de la nota.
-        - titulo (str): Título de la nota.
-        - contenido (str): Cuerpo del texto de la nota.
-        - estadoFavorito (bool): Estado de favorito (por defecto False).
-        - usuario_id (int | None): ID del usuario propietario (opcional).
-        """
-        self.id = id
-        self.titulo = titulo
-        self.contenido = contenido
-        self.estadoFavorito = estadoFavorito
-        self.usuario_id = usuario_id
-
-    def estado_favorito(self):
-        """
-        Marca la nota como favorita estableciendo `estadoFavorito` a True.
-        """
-        self.estadoFavorito = True
-
-    def __str__(self):
-        """
-        Devuelve una representación en texto de la nota.
-
-        Retorna:
-        - str: Cadena compuesta por el título y el contenido.
-        """
-        return f"{self.titulo}\n{self.contenido}"
+class Nota(Base):
+    __tablename__ = 'notas'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    titulo = Column(String(100), nullable=False)
+    contenido = Column(Text, nullable=False)  # Text para contenidos más largos
+    estado_favorito = Column(Boolean, default=False)
+    fecha_creacion = Column(DateTime, default=func.now())
+    fecha_modificacion = Column(DateTime, default=func.now(), onupdate=func.now())
+    usuario_id = Column(Integer, ForeignKey('usuarios.id'), nullable=False)
+    
+    # Relaciones
+    usuario = relationship("Usuario", back_populates="notas")
+    
+    def __repr__(self):
+        return f"<Nota(id={self.id}, titulo='{self.titulo}', favorito={self.estado_favorito})>"
+    
+    def alternar_favorito(self):
+        """Alterna el estado de favorito"""
+        self.estado_favorito = not self.estado_favorito

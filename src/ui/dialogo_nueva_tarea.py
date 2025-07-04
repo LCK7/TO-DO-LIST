@@ -120,13 +120,14 @@ class DialogoNuevaTarea(QDialog):
         De lo contrario, se muestra un mensaje de advertencia.
         """
         descripcion = self.descripcion_edit.text().strip()
-        fecha = self.fecha_edit.date().toPyDate()
+        fecha_qdate = self.fecha_edit.date().toPyDate()
+        fecha_hoy = QDate.currentDate()
 
         if not descripcion:
             QMessageBox.warning(self, "Campo vacío", "La descripción no puede estar vacía.")
             return
 
-        if fecha < date.today():
+        if fecha_qdate < fecha_hoy:
             QMessageBox.warning(self, "Fecha inválida", "No puedes seleccionar una fecha pasada.")
             return
 

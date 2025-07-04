@@ -1,168 +1,427 @@
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QPushButton,
-    QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView
+    QWidget, QVBoxLayout, QPushButton, QLabel, QCalendarWidget, QHBoxLayout,
+    QDialog, QListWidget, QListWidgetItem, QDialogButtonBox, QMessageBox
 )
-from PyQt6.QtCore import Qt
-from datetime import datetime, timedelta
-from src.gestores.gestor_tareas import GestorTareas
-
+from PyQt6.QtCore import Qt, QDate, QLocale
+from PyQt6.QtGui import QFont, QTextCharFormat, QColor
+from datetime import datetime, date, timedelta
+import locale
 
 class VentanaCalendario(QWidget):
     """
-    Ventana para mostrar un calendario semanal con las tareas pendientes del usuario.
-
-    Permite navegar entre semanas, visualizar tareas pendientes con fecha límite 
-    dentro de la semana seleccionada y regresar a la ventana principal.
+    Ventana del calendario con funcionalidad de tareas integrada.
     """
 
-    def __init__(self, usuario, volver_a_main):
-        """
-        Inicializa la ventana de calendario con las tareas del usuario.
-
-        Args:
-            usuario: Instancia del usuario actual.
-            volver_a_main: Función para volver a la ventana principal.
-        """
+    def __init__(self, usuario, gestor_tareas, volver_a_main):
         super().__init__()
         self.usuario = usuario
+        self.gestor_tareas = gestor_tareas
         self.volver_a_main = volver_a_main
-        self.gestor = GestorTareas()
-        self.setWindowTitle("📅 Calendario Semanal de Tareas")
-        self.setMinimumSize(800, 600)
-
-        self.fecha_actual = datetime.today()
-
+        self.tareas = []
+        self.setWindowTitle(f"📅 Calendario de {usuario.nombre_usuario}")
+        self.setMinimumSize(950, 850)  # Tamaño fijo más grande
+        self.setMaximumSize(950, 850)  # Evita redimensionado
+        
+        # Configurar idioma español
+        self.configurar_idioma_espanol()
+        
         self.init_ui()
-        self.mostrar_tareas()
+        self.aplicar_estilos()
+        self.cargar_tareas_y_configurar_calendario()
+
+    def configurar_idioma_espanol(self):
+        """Configura el calendario en español"""
+        try:
+            # Intentar configurar locale en español
+            locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
+        except:
+            try:
+                locale.setlocale(locale.LC_TIME, 'Spanish_Spain.1252')
+            except:
+                try:
+                    locale.setlocale(locale.LC_TIME, 'es_ES')
+                except:
+                    pass  # Si no funciona, usar inglés por defecto
 
     def init_ui(self):
-        """
-        Configura la interfaz gráfica del calendario semanal.
-        """
-        layout = QVBoxLayout()
+        layout_principal = QVBoxLayout()
+        layout_principal.setSpacing(20)
+        layout_principal.setContentsMargins(30, 30, 30, 30)
+        
+        # Header solo con botón volver (izquierda)
+        header_layout = QHBoxLayout()
+        self.btn_volver = QPushButton("← Volver al Menú")
+        self.btn_volver.setObjectName("btn_volver")
+        self.btn_volver.clicked.connect(self.volver)
+        header_layout.addWidget(self.btn_volver)
+        header_layout.addStretch()
+        layout_principal.addLayout(header_layout)
 
-        titulo = QLabel("📆 Tareas Pendientes por Semana")
+        # Título centrado
+        titulo = QLabel("📅 Calendario de Tareas")
+        titulo.setObjectName("titulo_principal")
         titulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        titulo.setStyleSheet("font-size: 22px; font-weight: bold; color: #1e3a8a;")
-        layout.addWidget(titulo)
+        layout_principal.addWidget(titulo, alignment=Qt.AlignmentFlag.AlignCenter)
+        
+        # Información de ayuda
+        info_superior = QLabel("🔵 = Tareas pendientes | 🔴 = Vencidas | 🟡 = Hoy | Haz clic para ver detalles")
+        info_superior.setObjectName("info_ayuda")
+        info_superior.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout_principal.addWidget(info_superior)
+        
+        # Calendario con tamaño fijo
+        self.calendario = QCalendarWidget()
+        self.calendario.setObjectName("calendario_principal")
+        self.calendario.clicked.connect(self.fecha_seleccionada)
+        self.calendario.setFixedHeight(400)  # Altura fija
+        
+        # Configurar calendario en español
+        locale_es = QLocale(QLocale.Language.Spanish, QLocale.Country.Spain)
+        self.calendario.setLocale(locale_es)
+        
+        layout_principal.addWidget(self.calendario)
+        
+        # Información de tareas con altura fija
+        self.info_tareas = QLabel("Selecciona una fecha para ver las tareas de ese día")
+        self.info_tareas.setObjectName("info_tareas")
+        self.info_tareas.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.info_tareas.setWordWrap(True)
+        self.info_tareas.setFixedHeight(120)  # Altura fija para evitar redimensionado
+        layout_principal.addWidget(self.info_tareas)
+        
+        self.setLayout(layout_principal)
 
-        self.semana_label = QLabel()
-        self.semana_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.semana_label.setStyleSheet("font-size: 16px; color: #555;")
-        layout.addWidget(self.semana_label)
-
-        botones_nav = QHBoxLayout()
-        btn_anterior = QPushButton("⬅ Semana anterior")
-        btn_siguiente = QPushButton("Semana siguiente ➡")
-        btn_anterior.clicked.connect(self.semana_anterior)
-        btn_siguiente.clicked.connect(self.semana_siguiente)
-        botones_nav.addWidget(btn_anterior)
-        botones_nav.addWidget(btn_siguiente)
-        layout.addLayout(botones_nav)
-
-        self.tabla = QTableWidget()
-        self.tabla.setColumnCount(2)
-        self.tabla.setHorizontalHeaderLabels(["Fecha", "Descripción"])
-        self.tabla.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)  # type: ignore
-        self.tabla.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)  # type: ignore
-        self.tabla.setStyleSheet("font-size: 14px;")
-        layout.addWidget(self.tabla)
-
-        btn_volver = QPushButton("⬅ Volver")
-        btn_volver.clicked.connect(self.volver)
-        layout.addWidget(btn_volver)
-
-        self.setLayout(layout)
-
+    def aplicar_estilos(self):
         self.setStyleSheet("""
             QWidget {
-                background-color: #f9fafb;
-                font-family: 'Segoe UI', sans-serif;
+                background-color: #f8f9fa;
+                font-family: 'Segoe UI', Arial, sans-serif;
+                color: #333;
             }
-            QLabel {
-                font-size: 16px;
-                margin-bottom: 10px;
-                color: #2d3748;
+            QLabel#titulo_principal {
+                font-size: 24px;
                 font-weight: bold;
+                color: #2c3e50;
+                padding: 10px;
             }
-            QHeaderView::section {
-                background-color: #1e40af;
+            QLabel#info_ayuda {
+                font-size: 14px;
+                color: #495057;
+                font-weight: 500;
+                padding: 8px;
+                background-color: #e9ecef;
+                border-radius: 6px;
+                margin: 5px;
+            }
+            QPushButton#btn_volver {
+                background-color: #6c757d;
                 color: white;
-                font-weight: bold;
-                padding: 6px;
-            }
-            QTableWidget {
                 border: none;
-                background-color: white;
-                gridline-color: #e2e8f0;
-            }
-            QPushButton {
-                padding: 8px 16px;
                 border-radius: 8px;
+                padding: 10px 20px;
+                font-size: 14px;
                 font-weight: bold;
-                background-color: #3182ce;
+            }
+            QPushButton#btn_volver:hover {
+                background-color: #5a6268;
+            }
+            QCalendarWidget#calendario_principal {
+                background-color: white;
+                border: 2px solid #e9ecef;
+                border-radius: 12px;
+                font-size: 14px;
+                selection-background-color: #007bff;
+            }
+            QCalendarWidget QToolButton {
+                background-color: #007bff;
                 color: white;
                 border: none;
+                border-radius: 4px;
+                padding: 8px;
+                font-weight: bold;
+                min-width: 80px;
             }
-            QPushButton:hover {
-                background-color: #2b6cb0;
+            QCalendarWidget QToolButton:hover {
+                background-color: #0056b3;
+            }
+            QCalendarWidget QWidget#qt_calendar_navigationbar {
+                background-color: #007bff;
+                color: white;
+                border-radius: 6px;
+            }
+            QCalendarWidget QAbstractItemView:enabled {
+                font-size: 13px;
+                background-color: white;
+                selection-background-color: #007bff;
+                selection-color: white;
+            }
+            QCalendarWidget QAbstractItemView::item:selected {
+                background-color: #007bff;
+                color: white;
+            }
+            QCalendarWidget QHeaderView::section {
+                background-color: #e9ecef;
+                color: #495057;
+                padding: 4px;
+                font-weight: bold;
+                border: 1px solid #dee2e6;
+            }
+            QLabel#info_tareas {
+                font-size: 14px;
+                color: #495057;
+                padding: 15px;
+                background-color: white;
+                border: 1px solid #e9ecef;
+                border-radius: 8px;
+                min-height: 100px;
+                max-height: 120px;
             }
         """)
 
-    def mostrar_tareas(self):
-        """
-        Carga y muestra en la tabla las tareas pendientes de la semana actual.
-        """
-        inicio_semana = self.fecha_actual - timedelta(days=self.fecha_actual.weekday())
-        fin_semana = inicio_semana + timedelta(days=6)
+    def cargar_tareas_y_configurar_calendario(self):
+        """Carga las tareas y configura el rango del calendario"""
+        self.tareas = self.gestor_tareas.obtener_todas(self.usuario.id)
+        
+        # Configurar rango de fechas basado en tareas
+        if self.tareas:
+            fechas_tareas = [t.fecha_limite for t in self.tareas if t.fecha_limite]
+            if fechas_tareas:
+                fecha_min = min(fechas_tareas)
+                fecha_max = max(fechas_tareas)
+                
+                # Expandir el rango un poco
+                fecha_min = fecha_min - timedelta(days=30)
+                fecha_max = fecha_max + timedelta(days=30)
+                
+                self.calendario.setMinimumDate(QDate(fecha_min))
+                self.calendario.setMaximumDate(QDate(fecha_max))
+            else:
+                # Si no hay fechas límite, usar rango actual
+                hoy = date.today()
+                self.calendario.setMinimumDate(QDate(hoy.year - 1, 1, 1))
+                self.calendario.setMaximumDate(QDate(hoy.year + 1, 12, 31))
+        else:
+            # Si no hay tareas, usar rango actual
+            hoy = date.today()
+            self.calendario.setMinimumDate(QDate(hoy.year - 1, 1, 1))
+            self.calendario.setMaximumDate(QDate(hoy.year + 1, 12, 31))
+        
+        # Marcar días con tareas pendientes
+        self.marcar_dias_con_tareas()
 
-        self.semana_label.setText(
-            f"🗓️ Semana: {inicio_semana.strftime('%d/%m/%Y')} - {fin_semana.strftime('%d/%m/%Y')}"
-        )
+    def marcar_dias_con_tareas(self):
+        """Marca los días que tienen tareas pendientes"""
+        formato_pendiente = QTextCharFormat()
+        formato_pendiente.setBackground(QColor("#66b3ff"))
+        formato_pendiente.setForeground(QColor("white"))
+        formato_pendiente.setFontWeight(QFont.Weight.Bold)
+        
+        formato_vencida = QTextCharFormat()
+        formato_vencida.setBackground(QColor("#dc3545"))
+        formato_vencida.setForeground(QColor("white"))
+        formato_vencida.setFontWeight(QFont.Weight.Bold)
+        
+        formato_hoy = QTextCharFormat()
+        formato_hoy.setBackground(QColor("#ffc107"))
+        formato_hoy.setForeground(QColor("#212529"))
+        formato_hoy.setFontWeight(QFont.Weight.Bold)
+        
+        hoy = date.today()
+        
+        for tarea in self.tareas:
+            if tarea.fecha_limite and not tarea.estado:  # Solo tareas pendientes
+                fecha_qdate = QDate(tarea.fecha_limite)
+                
+                if tarea.fecha_limite < hoy:
+                    # Tarea vencida
+                    self.calendario.setDateTextFormat(fecha_qdate, formato_vencida)
+                elif tarea.fecha_limite == hoy:
+                    # Tarea para hoy
+                    self.calendario.setDateTextFormat(fecha_qdate, formato_hoy)
+                else:
+                    # Tarea pendiente
+                    self.calendario.setDateTextFormat(fecha_qdate, formato_pendiente)
 
-        tareas = self.gestor.obtener_todas(self.usuario.id)
-        tareas_semana = [
-            t for t in tareas
-            if t.fecha_limite
-            and inicio_semana.date() <= datetime.strptime(t.fecha_limite, "%Y-%m-%d").date() <= fin_semana.date()
-            and not t.estado
+    def fecha_seleccionada(self, fecha_qdate):
+        """Maneja la selección de una fecha en el calendario"""
+        fecha_python = fecha_qdate.toPyDate()
+        tareas_del_dia = [t for t in self.tareas if t.fecha_limite == fecha_python]
+        
+        if tareas_del_dia:
+            # Mostrar modal con las tareas del día
+            self.mostrar_modal_tareas(fecha_python, tareas_del_dia)
+        else:
+            # Actualizar info inferior
+            fecha_str = self.formatear_fecha_espanol(fecha_python)
+            self.info_tareas.setText(f"📅 {fecha_str}\n\nNo hay tareas programadas para este día.")
+
+    def formatear_fecha_espanol(self, fecha):
+        """Formatea la fecha en español"""
+        meses = [
+            "enero", "febrero", "marzo", "abril", "mayo", "junio",
+            "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
         ]
+        
+        dias_semana = [
+            "lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"
+        ]
+        
+        dia_semana = dias_semana[fecha.weekday()]
+        dia = fecha.day
+        mes = meses[fecha.month - 1]
+        año = fecha.year
+        
+        return f"{dia_semana}, {dia} de {mes} de {año}"
 
-        self.tabla.clearContents()
-        self.tabla.setRowCount(len(tareas_semana))
-
-        for i, tarea in enumerate(tareas_semana):
-            fecha = tarea.fecha_limite or "Sin fecha"
-            descripcion = tarea.descripcion or "Sin descripción"
-
-            fecha_item = QTableWidgetItem(fecha)
-            descripcion_item = QTableWidgetItem(descripcion)
-
-            for item in (fecha_item, descripcion_item):
-                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                item.setForeground(Qt.GlobalColor.black)
-                item.setBackground(Qt.GlobalColor.white)
-
-            self.tabla.setItem(i, 0, fecha_item)
-            self.tabla.setItem(i, 1, descripcion_item)
-
-    def semana_anterior(self):
-        """
-        Desplaza la vista una semana hacia atrás y actualiza la tabla.
-        """
-        self.fecha_actual -= timedelta(days=7)
-        self.mostrar_tareas()
-
-    def semana_siguiente(self):
-        """
-        Desplaza la vista una semana hacia adelante y actualiza la tabla.
-        """
-        self.fecha_actual += timedelta(days=7)
-        self.mostrar_tareas()
+    def mostrar_modal_tareas(self, fecha, tareas_del_dia):
+        """Muestra un modal con las tareas del día seleccionado"""
+        dialog = DialogTareasDelDia(self, fecha, tareas_del_dia)
+        dialog.exec()
+        
+        # Actualizar info inferior con fecha en español
+        fecha_str = self.formatear_fecha_espanol(fecha)
+        pendientes = len([t for t in tareas_del_dia if not t.estado])
+        completadas = len([t for t in tareas_del_dia if t.estado])
+        
+        if pendientes > 0:
+            self.info_tareas.setText(
+                f"📅 {fecha_str}\n\n"
+                f"📋 {len(tareas_del_dia)} tarea(s) total(es)\n"
+                f"⏳ {pendientes} pendiente(s) | ✅ {completadas} completada(s)\n\n"
+                f"Haz clic nuevamente para ver detalles."
+            )
+        else:
+            self.info_tareas.setText(
+                f"📅 {fecha_str}\n\n"
+                f"✅ Todas las tareas completadas ({completadas})\n\n"
+                f"¡Excelente trabajo!"
+            )
 
     def volver(self):
-        """
-        Cierra la ventana y regresa a la ventana principal.
-        """
         self.close()
         self.volver_a_main()
+
+
+class DialogTareasDelDia(QDialog):
+    """Modal que muestra las tareas de un día específico"""
+    
+    def __init__(self, parent, fecha, tareas):
+        super().__init__(parent)
+        self.fecha = fecha
+        self.tareas = tareas
+        self.setWindowTitle(f"Tareas del {fecha.strftime('%d/%m/%Y')}")
+        self.setMinimumSize(500, 400)
+        self.init_ui()
+        self.aplicar_estilos()
+
+    def formatear_fecha_espanol(self, fecha):
+        """Formatea la fecha en español para el modal"""
+        meses = [
+            "enero", "febrero", "marzo", "abril", "mayo", "junio",
+            "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+        ]
+        
+        dia = fecha.day
+        mes = meses[fecha.month - 1]
+        año = fecha.year
+        
+        return f"{dia} de {mes} de {año}"
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+        layout.setSpacing(15)
+        layout.setContentsMargins(20, 20, 20, 20)
+        
+        # Título con fecha en español
+        fecha_str = self.formatear_fecha_espanol(self.fecha)
+        titulo = QLabel(f"📅 Tareas del {fecha_str}")
+        titulo.setObjectName("titulo_modal")
+        titulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(titulo)
+        
+        # Estadísticas
+        pendientes = len([t for t in self.tareas if not t.estado])
+        completadas = len([t for t in self.tareas if t.estado])
+        
+        stats = QLabel(f"📊 Total: {len(self.tareas)} | ⏳ Pendientes: {pendientes} | ✅ Completadas: {completadas}")
+        stats.setObjectName("stats_modal")
+        stats.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(stats)
+        
+        # Lista de tareas
+        self.lista_tareas = QListWidget()
+        self.lista_tareas.setObjectName("lista_modal")
+        
+        for tarea in self.tareas:
+            estado_icon = "✅" if tarea.estado else "⏳"
+            categoria_info = f" [{tarea.categoria.nombre}]" if tarea.categoria else ""
+            
+            # Verificar urgencia
+            urgencia = ""
+            if not tarea.estado:
+                hoy = date.today()
+                if tarea.fecha_limite < hoy:
+                    urgencia = " ⚠️ VENCIDA"
+                elif tarea.fecha_limite == hoy:
+                    urgencia = " 🔥 HOY"
+            
+            texto = f"{estado_icon} {tarea.descripcion}{categoria_info}{urgencia}"
+            item = QListWidgetItem(texto)
+            
+            # Colorear según estado
+            if not tarea.estado and tarea.fecha_limite < date.today():
+                item.setBackground(QColor("#ffebee"))  # Rojo claro para vencidas
+            elif not tarea.estado and tarea.fecha_limite == date.today():
+                item.setBackground(QColor("#fff3e0"))  # Naranja claro para hoy
+            elif tarea.estado:
+                item.setBackground(QColor("#e8f5e8"))  # Verde claro para completadas
+            
+            self.lista_tareas.addItem(item)
+        
+        layout.addWidget(self.lista_tareas)
+        
+        # Botón cerrar
+        botones = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        botones.rejected.connect(self.reject)
+        layout.addWidget(botones)
+        
+        self.setLayout(layout)
+
+    def aplicar_estilos(self):
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #f8f9fa;
+                font-family: 'Segoe UI', Arial, sans-serif;
+            }
+            QLabel#titulo_modal {
+                font-size: 18px;
+                font-weight: bold;
+                color: #2c3e50;
+                padding: 10px;
+            }
+            QLabel#stats_modal {
+                font-size: 14px;
+                color: #495057;
+                background-color: #e9ecef;
+                padding: 8px;
+                border-radius: 6px;
+                font-weight: 500;
+            }
+            QListWidget#lista_modal {
+                background-color: white;
+                border: 2px solid #e9ecef;
+                border-radius: 8px;
+                padding: 5px;
+                font-size: 14px;
+            }
+            QListWidget#lista_modal::item {
+                background-color: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 6px;
+                padding: 10px;
+                margin: 3px;
+            }
+            QListWidget#lista_modal::item:hover {
+                background-color: #e9ecef;
+            }
+        """)

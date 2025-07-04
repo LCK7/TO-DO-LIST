@@ -6,40 +6,33 @@ from src.ui.window_notas import VentanaNotas
 from src.ui.window_calendario import VentanaCalendario
 from src.ui.window_gestion_categoria import VentanaGestionCategoria
 
-
 class MainWindow(QWidget):
     """
     Ventana principal de la aplicación TO-DO-LIST.
-
     Permite al usuario acceder a tareas, notas, calendario, gestión de categorías
     y cerrar sesión.
     """
 
-    def __init__(self, usuario, volver_a_login):
+    def __init__(self, usuario, gestor_notas, gestor_tareas, gestor_categoria, volver_a_login):
         """
-        Inicializa la ventana principal con el usuario actual.
-
-        Args:
-            usuario: Instancia del usuario autenticado.
-            volver_a_login: Función para regresar al login al cerrar sesión.
+        Inicializa la ventana principal con el usuario actual y los gestores.
         """
         super().__init__()
         self.usuario = usuario
-        self.setWindowTitle(f"TO-DO-LIST de {usuario.nombre_usuario}")
-        self.setMinimumSize(700, 500)
+        self.gestor_notas = gestor_notas
+        self.gestor_tareas = gestor_tareas
+        self.gestor_categoria = gestor_categoria
         self.volver_a_login = volver_a_login
+        self.setWindowTitle(f"TO-DO-LIST de {usuario.nombre_usuario}")
+        self.setMinimumSize(1000, 600)
         self.init_ui()
 
     def init_ui(self):
-        """
-        Configura y construye la interfaz gráfica de la ventana principal.
-        """
         fila_administracion = QHBoxLayout()
         fila_administracion.addStretch()
         btn_gestion_categorias = QPushButton("🏷️ GESTION CATEGORÍA")
         btn_gestion_categorias.setObjectName("categorias")
         btn_gestion_categorias.setFixedSize(250, 40)
-
         btn_gestion_categorias.clicked.connect(self.abrir_gestion_categorias)
         fila_administracion.addWidget(btn_gestion_categorias)
 
@@ -69,17 +62,17 @@ class MainWindow(QWidget):
 
         self.btn_tareas = QPushButton("📝 TAREAS")
         self.btn_tareas.setObjectName("tareas")
-        self.btn_tareas.setFixedSize(200, 50)
+        self.btn_tareas.setFixedSize(300, 100)
         self.btn_tareas.clicked.connect(self.abrir_tareas)
 
         self.btn_notas = QPushButton("🗒️ NOTAS")
         self.btn_notas.setObjectName("notas")
-        self.btn_notas.setFixedSize(200, 50)
+        self.btn_notas.setFixedSize(300, 100)
         self.btn_notas.clicked.connect(self.abrir_notas)
 
         self.btn_calendario = QPushButton("📅 CALENDARIO")
         self.btn_calendario.setObjectName("calendario")
-        self.btn_calendario.setFixedSize(200, 50)
+        self.btn_calendario.setFixedSize(300, 100)
         self.btn_calendario.clicked.connect(self.abrir_calendario)
 
         self.btn_cerrar_sesion = QPushButton("🚪 Cerrar sesión")
@@ -123,12 +116,21 @@ class MainWindow(QWidget):
                 color: #555;
             }
             QPushButton {
-                font-size: 16px;
+                font-size: 15px;
                 padding: 10px;
                 border-radius: 12px;
                 border: none;
                 background-color: #e2e8f0;
                 color: #1a202c;
+            }
+            QPushButton#tareas {
+                font-size: 25px;
+            }
+            QPushButton#notas {
+                font-size: 25px;
+            }
+            QPushButton#calendario {
+                font-size: 25px;
             }
             QPushButton:hover {
                 background-color: #cbd5e1;
@@ -158,72 +160,58 @@ class MainWindow(QWidget):
         self.setLayout(layout)
 
     def abrir_tareas(self):
-        """
-        Oculta la ventana principal y muestra la ventana de gestión de tareas.
-        """
         print("Ocultando ventana principal...")
         self.hide()
-
         def volver():
             self.show()
             self.btn_tareas.setEnabled(True)
-
         self.btn_tareas.setEnabled(False)
-        self.ventana_tareas = VentanaTareas(self.usuario, volver_a_main=volver)
+        self.ventana_tareas = VentanaTareas(
+            self.usuario, 
+            self.gestor_tareas, 
+            self.gestor_categoria,
+            volver_a_main=volver
+        )
         self.ventana_tareas.show()
 
     def abrir_notas(self):
-        """
-        Oculta la ventana principal y muestra la ventana de notas.
-        """
         print("Ocultando ventana principal (Notas)...")
         self.hide()
-
         def volver():
             self.show()
             self.btn_notas.setEnabled(True)
-
         self.btn_notas.setEnabled(False)
-        self.ventana_notas = VentanaNotas(self.usuario, volver_a_main=volver)
+        self.ventana_notas = VentanaNotas(self.usuario, self.gestor_notas, volver_a_main=volver)
         self.ventana_notas.show()
 
     def abrir_calendario(self):
-        """
-        Oculta la ventana principal y abre la ventana de calendario.
-        """
         self.hide()
-
         def volver():
             self.ventana_calendario.close()
             self.show()
-
-        self.ventana_calendario = VentanaCalendario(self.usuario, volver_a_main=volver)
+        # ✅ Aquí estaba el error - faltaba self.gestor_tareas
+        self.ventana_calendario = VentanaCalendario(
+            self.usuario, 
+            self.gestor_tareas,  # ← Agregado
+            volver_a_main=volver
+        )
         self.ventana_calendario.show()
 
     def abrir_gestion_categorias(self):
-        """
-        Oculta la ventana principal y muestra la gestión de categorías.
-        """
         self.hide()
-
         def volver():
             self.ventana_gestion_categorias.close()
             self.show()
-
-        self.ventana_gestion_categorias = VentanaGestionCategoria(self.usuario, volver)
+        self.ventana_gestion_categorias = VentanaGestionCategoria(self.usuario, self.gestor_categoria, volver)
         self.ventana_gestion_categorias.show()
 
     def cerrar_sesion(self):
-        """
-        Pregunta al usuario si desea cerrar sesión y, si confirma, vuelve al login.
-        """
         confirmacion = QMessageBox.question(
             self,
             "Cerrar sesión",
             "¿Estás seguro que deseas cerrar sesión?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
-
         if confirmacion == QMessageBox.StandardButton.Yes:
             self.close()
             self.volver_a_login()

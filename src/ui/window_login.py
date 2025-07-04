@@ -3,40 +3,28 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QMessageBox
 )
 from PyQt6.QtCore import Qt
-from src.gestores.gestor_usuarios import GestorUsuarios
 from src.ui.window_register import WindowRegister
-# from src.ui.main_window import MainWindow # Comentado para evitar importación circular temprana
 
 class WindowLogin(QWidget):
     """
     Ventana de inicio de sesión para la aplicación TO-DO List.
-
-    Permite a los usuarios ingresar sus credenciales para acceder a la aplicación.
-    También proporciona un enlace para registrar nuevas cuentas.
     """
-    def __init__(self, on_login_exitoso):
-        """
-        Inicializa la ventana de login.
 
-        Args:
-            on_login_exitoso: Función de callback que se ejecuta si el login es exitoso.
-                              Recibirá el objeto de usuario como argumento.
-        """
+    def __init__(self, gestor_usuarios, on_login_exitoso):
         super().__init__()
         self.setWindowTitle("Login | TO-DO List")
         self.setMinimumSize(350, 450)
+        self.gestor = gestor_usuarios
         self.on_login_exitoso = on_login_exitoso
-        self.gestor = GestorUsuarios()
-        
+
         self.setStyleSheet("""
             QWidget {
                 background-color: #f4f4f4;
                 font-family: Arial;
                 font-size: 14px;
-                color: #222; /* Texto más oscuro para mayor contraste */
+                color: #222;
             }
             QLabel#titulo1 {
-                
                 font-size: 22px;
                 font-weight: bold;
                 color: #333;
@@ -89,7 +77,7 @@ class WindowLogin(QWidget):
                 font-weight: bold;
             }
         """)
-        
+
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -137,47 +125,22 @@ class WindowLogin(QWidget):
         self.setLayout(layout)
 
     def intentar_login(self):
-        """
-        Intenta iniciar sesión con las credenciales proporcionadas.
-
-        Verifica el usuario y la contraseña con el gestor de usuarios.
-        Si el login es exitoso, oculta la ventana actual, crea y muestra
-        la ventana principal de la aplicación, y pasa el objeto de usuario.
-        Si falla, muestra un mensaje de error.
-        """
         usuario = self.usuario_input.text()
         contraseña = self.contraseña_input.text()
-
         usuario_obj = self.gestor.verificar_login(usuario, contraseña)
 
         if usuario_obj:
             self.hide()
-
-            def volver_al_login():
-                """Callback para regresar a la ventana de login desde la principal."""
-                self.show()
-
-            # Importación local para evitar circularidad si MainWindow también importa WindowLogin
-            from src.ui.main_window import MainWindow 
-            self.ventana_principal = MainWindow(usuario_obj, volver_a_login=volver_al_login)
-            self.ventana_principal.show()
+            # Solo llama a la función que se pasa desde app.py
+            if self.on_login_exitoso:
+                self.on_login_exitoso(usuario_obj)
         else:
             QMessageBox.warning(self, "Error de Login", "Usuario o contraseña incorrectos.")
 
-
     def abrir_registro(self):
-        """
-        Abre la ventana de registro de usuarios.
-
-        Oculta la ventana de login actual y muestra la ventana de registro.
-        Configura un callback para que, al cerrar la ventana de registro,
-        se vuelva a mostrar la ventana de login.
-        """
         self.hide()
-
         def volver():
-            """Callback para regresar a la ventana de login desde el registro."""
             self.show()
-
-        self.ventana_registro = WindowRegister(volver_a_login=volver)
+        # Pasa el mismo gestor a la ventana de registro
+        self.ventana_registro = WindowRegister(self.gestor, volver_a_login=volver)
         self.ventana_registro.show()

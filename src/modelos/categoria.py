@@ -1,31 +1,19 @@
-class Categoria:
-    """
-    Representa una categoría a la que pueden pertenecer tareas.
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+from src.modelos.base import Base
 
-    Atributos:
-    - id (int): Identificador único de la categoría.
-    - nombre (str): Nombre de la categoría.
-    - usuario_id (int): ID del usuario propietario de la categoría.
-    """
-
-    def __init__(self, id, nombre, usuario_id):
-        """
-        Inicializa una nueva instancia de la clase Categoria.
-
-        Parámetros:
-        - id (int): Identificador de la categoría.
-        - nombre (str): Nombre de la categoría.
-        - usuario_id (int): ID del usuario al que pertenece la categoría.
-        """
-        self.id = id
-        self.nombre = nombre
-        self.usuario_id = usuario_id
-
-    def __str__(self):
-        """
-        Devuelve una representación en cadena de la categoría.
-
-        Retorna:
-        - str: Cadena con el formato '#ID - nombre'.
-        """
-        return f"#{self.id} - {self.nombre}"
+class Categoria(Base):
+    __tablename__ = 'categorias'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    nombre = Column(String(100), nullable=False)
+    usuario_id = Column(Integer, ForeignKey('usuarios.id'), nullable=False)
+    fecha_creacion = Column(DateTime, default=func.now())
+    
+    # Relaciones
+    usuario = relationship("Usuario", back_populates="categorias")
+    tareas = relationship("Tarea", back_populates="categoria")
+    
+    def __repr__(self):
+        return f"<Categoria(id={self.id}, nombre='{self.nombre}')>"
